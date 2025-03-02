@@ -23,10 +23,10 @@ class JukeboxCard extends HTMLElement {
         this.shadowRoot.innerHTML = `
             <ha-card>
               <div id="content">
-                <div id="speaker-switches"></div>
+                <div id="speaker-switches" class="row"></div>
                 <div id="volume-row" class="row"></div>
                 <div id="sleep-row" class="row"></div>
-                <div id="station-list"></div>
+                <div id="station-list" class="row"></div>
               </div>
               ${this.getStyles()}
             </ha-card>
@@ -54,7 +54,6 @@ class JukeboxCard extends HTMLElement {
             #content {
                 display: flex;
                 flex-direction: column;
-                /* Remove margin or padding that might cause extra space */
                 margin: 0;
                 padding: 0;
             }
@@ -64,7 +63,6 @@ class JukeboxCard extends HTMLElement {
                 align-items: center;
                 margin: 8px 0;
             }
-            /* If a container is empty, force it to collapse */
             .row:empty {
                 display: none;
             }
@@ -79,7 +77,11 @@ class JukeboxCard extends HTMLElement {
                 --paper-icon-button-ink-color: #fff;
                 --paper-icon-button-icon-color: #fff;
             }
-            /* Adjust additional container styles as needed */
+            /* Additional style adjustments */
+            paper-tab {
+                padding: 8px;
+                cursor: pointer;
+            }
         </style>`;
     }
 
@@ -106,85 +108,68 @@ class JukeboxCard extends HTMLElement {
 
     buildStationList() {
         this._stationButtons = [];
-
         const stationList = document.createElement('div');
-        stationList.classList.add('station-list');
-
+        stationList.classList.add('row'); // using .row to collapse if empty
         this.config.links.forEach(linkCfg => {
-            const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url)
+            const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url);
             this._stationButtons.push(stationButton);
             stationList.appendChild(stationButton);
         });
-
-        // make sure the update method is notified of a change
+        // Notify update method on state change
         this._hassObservers.push(this.updateStationSwitchStates.bind(this));
-
         return stationList;
     }
 
     buildVolumeSlider() {
         const volumeContainer = document.createElement('div');
         volumeContainer.className = 'volume center horizontal layout';
-
         const muteButton = document.createElement('paper-icon-button');
         muteButton.setAttribute('icon', 'hass:volume-high');
         muteButton.isMute = false;
         muteButton.addEventListener('click', this.onMuteUnmute.bind(this));
-
         const slider = document.createElement('ha-paper-slider');
         slider.min = 0;
         slider.max = 100;
         slider.addEventListener('change', this.onChangeVolumeSlider.bind(this));
         slider.className = 'flex';
-
         const stopButton = document.createElement('paper-icon-button');
         stopButton.setAttribute('icon', 'hass:stop');
         stopButton.setAttribute('disabled', true);
         stopButton.addEventListener('click', this.onStop.bind(this));
-
         volumeContainer.appendChild(muteButton);
         volumeContainer.appendChild(slider);
         volumeContainer.appendChild(stopButton);
-        // Removed sleep timer from here
-
+        // Volume observer to set display and update values.
         this._hassObservers.push(hass => {
             if (!this._selectedSpeaker) {
-                 console.error('(DEBUG) no _selectedSpeaker defined');
-                 return;
+                console.error('(DEBUG) no _selectedSpeaker defined');
+                return;
             }
             const state = hass.states[this._selectedSpeaker];
             if (!state) {
-                 console.warn('(DEBUG) no state found for', this._selectedSpeaker);
-                // Fallback defaults – ensure the controls are visible
+                console.warn('(DEBUG) no state found for', this._selectedSpeaker);
                 slider.value = 50;
                 stopButton.setAttribute('disabled', true);
                 muteButton.setAttribute('icon', 'hass:volume-high');
-                // Force visibility regardless
                 slider.style.display = 'block';
                 muteButton.style.display = 'block';
                 stopButton.style.display = 'block';
                 return;
             }
             const speakerState = state.attributes;
-            // ALWAYS show controls; remove hidden attribute and force display style
             slider.removeAttribute('hidden');
             stopButton.removeAttribute('hidden');
             muteButton.removeAttribute('hidden');
             slider.style.display = 'block';
             muteButton.style.display = 'block';
             stopButton.style.display = 'block';
-            
-            // Use default volume value if missing instead of hiding controls
-            const volLevel = (speakerState.hasOwnProperty('volume_level')) ? speakerState.volume_level : 0;
+            const volLevel = speakerState.hasOwnProperty('volume_level') ? speakerState.volume_level : 0;
             slider.value = volLevel * 100;
-
-            // Enable/disable stop button based on playing state
             if (state.state === 'playing') {
                 stopButton.removeAttribute('disabled');
             } else {
                 stopButton.setAttribute('disabled', true);
             }
-            // Instead of hiding, always show mute control
             const isMuted = speakerState.hasOwnProperty('is_volume_muted') ? speakerState.is_volume_muted : false;
             if (isMuted) {
                 slider.disabled = true;
@@ -196,39 +181,32 @@ class JukeboxCard extends HTMLElement {
                 muteButton.isMute = false;
             }
         });
-
         return volumeContainer;
     }
 
     buildSleepTimerRow() {
         const sleepContainer = document.createElement('div');
         sleepContainer.className = 'sleep-timer center horizontal layout';
-        
-        // Slider for setting sleep time in minutes
         const sleepSlider = document.createElement('ha-paper-slider');
         sleepSlider.min = 0;
-        sleepSlider.max = 120; // e.g. 0 to 120 minutes
-        sleepSlider.value = 5; // default value
+        sleepSlider.max = 120;
+        sleepSlider.value = 5;
         sleepSlider.addEventListener('change', (e) => {
-            // Support different event objects across browsers
             this._sleepMinutes = parseInt(e.detail?.value || e.target.value, 10) || 5;
         });
         sleepSlider.className = 'flex';
-
-        // Button to enable sleep timer with set minutes
         const sleepSetButton = document.createElement('paper-icon-button');
         sleepSetButton.setAttribute('icon', 'hass:timer');
         sleepSetButton.addEventListener('click', () => {
             const minutes = this._sleepMinutes || 5;
             console.log(`Setting sleep timer for ${minutes} minutes on entity: ${this._selectedSpeaker}`);
             setTimeout(() => {
-                console.log('Sleep timer fired. Stopping media on:', this._selectedSpeaker);
+                console.log(`(DEBUG) sleep timer fired for entity: ${this._selectedSpeaker}`);
                 this.hass.callService('media_player', 'media_stop', {
                     entity_id: this._selectedSpeaker
-                });
+                }).catch(err => console.error('(DEBUG) media_stop service call failed:', err));
             }, minutes * 60000);
         });
-        
         sleepContainer.appendChild(sleepSlider);
         sleepContainer.appendChild(sleepSetButton);
         return sleepContainer;
@@ -266,7 +244,6 @@ class JukeboxCard extends HTMLElement {
             alert('Please enter a valid positive integer.');
             return;
         }
-        // Preserve current selected speaker with a fallback default
         const entity = this._selectedSpeaker || 'media_player.default';
         console.log(`(DEBUG) sleep timer set for ${minutes} minutes on: ${entity}`);
         setTimeout(() => {
@@ -280,11 +257,9 @@ class JukeboxCard extends HTMLElement {
     updateStationSwitchStates(hass) {
         let playingUrl = null;
         const selectedSpeaker = this._selectedSpeaker;
-
         if (hass.states[selectedSpeaker] && hass.states[selectedSpeaker].state === 'playing') {
             playingUrl = hass.states[selectedSpeaker].attributes.media_content_id;
         }
-
         this._stationButtons.forEach(stationSwitch => {
             if (stationSwitch.hasAttribute('raised') && stationSwitch.stationUrl !== playingUrl) {
                 stationSwitch.removeAttribute('raised');
@@ -293,7 +268,7 @@ class JukeboxCard extends HTMLElement {
             if (!stationSwitch.hasAttribute('raised') && stationSwitch.stationUrl === playingUrl) {
                 stationSwitch.setAttribute('raised', true);
             }
-        })
+        });
     }
 
     buildStationSwitch(name, url) {
@@ -301,7 +276,6 @@ class JukeboxCard extends HTMLElement {
         btn.stationUrl = url;
         btn.className = 'juke-toggle';
         btn.innerText = name;
-        // Update event listener to use onMediaSelect instead of onStationSelect.
         btn.addEventListener('click', this.onMediaSelect.bind(this));
         return btn;
     }
@@ -321,13 +295,6 @@ class JukeboxCard extends HTMLElement {
         });
     }
 
-    /***
-     * returns the numeric index of the first entity in a "Playing" state, or 0 (first index).
-     *
-     * @param hass
-     * @returns {number}
-     * @private
-     */
     findFirstPlayingIndex(hass) {
         return Math.max(0, this.config.entities.findIndex(entityId => {
             return hass.states[entityId] && hass.states[entityId].state === 'playing';
@@ -335,10 +302,8 @@ class JukeboxCard extends HTMLElement {
     }
 
     buildSpeakerSwitch(entityId, hass) {
-        const entity = hass.states[entityId];
-
         const btn = document.createElement('paper-tab');
-        btn.entityId = entityId;        
+        btn.entityId = entityId;
         btn.innerText = hass.states[entityId].attributes.friendly_name;
         return btn;
     }
