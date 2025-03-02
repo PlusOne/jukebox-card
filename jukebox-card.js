@@ -128,6 +128,7 @@ class JukeboxCard extends HTMLElement {
         volumeContainer.appendChild(slider);
         volumeContainer.appendChild(stopButton);
         volumeContainer.appendChild(sleepButton);
+        console.log('Sleep button appended:', sleepButton);
         return volumeContainer;
     }
 
