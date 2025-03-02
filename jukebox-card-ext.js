@@ -93,38 +93,33 @@ class JukeboxCard extends HTMLElement {
             }
             const speakerState = hass.states[this._selectedSpeaker].attributes;
 
-            // no speaker level? then hide mute button and volume
-            if (!speakerState.hasOwnProperty('volume_level')) {
-                slider.setAttribute('hidden', true);
-                stopButton.setAttribute('hidden', true)
-            } else {
-                slider.removeAttribute('hidden');
-                stopButton.removeAttribute('hidden')
-            }
+            // Always show controls (remove hidden attribute conditions)
+            slider.removeAttribute('hidden');
+            stopButton.removeAttribute('hidden');
+            muteButton.removeAttribute('hidden');
 
-            if (!speakerState.hasOwnProperty('is_volume_muted')) {
-                muteButton.setAttribute('hidden', true);
-            } else {
-                muteButton.removeAttribute('hidden');
-            }
+            // Use a default volume value if volume_level is not available
+            const volLevel = speakerState.hasOwnProperty('volume_level') ? speakerState.volume_level : 0;
+            slider.value = volLevel * 100;
 
+            // Enable or disable the stop button based on playing state
             if (hass.states[this._selectedSpeaker].state === 'playing') {
-                stopButton.removeAttribute('disabled');
+                 stopButton.removeAttribute('disabled');
             } else {
-                stopButton.setAttribute('disabled', true);
+                 stopButton.setAttribute('disabled', true);
             }
 
-            slider.value = speakerState.volume_level ? speakerState.volume_level * 100 : 0;
-
-            if (speakerState.is_volume_muted && !slider.disabled) {
-                slider.disabled = true;
-                muteButton.icon = 'hass:volume-off';
-                muteButton.isMute = true;
-            } else if (!speakerState.is_volume_muted && slider.disabled) {
-                slider.disabled = false;
-                muteButton.icon = 'hass:volume-high';
-                muteButton.isMute = false;
-            }
+            // Always show mute control – if property missing, assume not muted
+            const isMuted = speakerState.hasOwnProperty('is_volume_muted') ? speakerState.is_volume_muted : false;
+            if (isMuted) {
+                  slider.disabled = true;
+                  muteButton.icon = 'hass:volume-off';
+                  muteButton.isMute = true;
+             } else {
+                  slider.disabled = false;
+                  muteButton.icon = 'hass:volume-high';
+                  muteButton.isMute = false;
+             }
         });
 
         return volumeContainer;
