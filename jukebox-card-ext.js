@@ -1,7 +1,6 @@
 class JukeboxCard extends HTMLElement {
     constructor() {
         super();
-        // Use Shadow DOM for encapsulation.
         this.attachShadow({ mode: 'open' });
     }
 
@@ -19,7 +18,6 @@ class JukeboxCard extends HTMLElement {
     }
 
     renderStructure() {
-        // Use a template literal for the structure:
         this.shadowRoot.innerHTML = `
             <ha-card>
               <div id="content">
@@ -31,19 +29,17 @@ class JukeboxCard extends HTMLElement {
               ${this.getStyles()}
             </ha-card>
         `;
-        // Render each row using current config methods.
         this.shadowRoot.querySelector('#speaker-switches')
-               .appendChild(this.buildSpeakerSwitches(this._hass));
+            .appendChild(this.buildSpeakerSwitches(this._hass));
         this.shadowRoot.querySelector('#volume-row')
-               .appendChild(this.buildVolumeSlider());
+            .appendChild(this.buildVolumeSlider());
         this.shadowRoot.querySelector('#sleep-row')
-               .appendChild(this.buildSleepTimerRow());
+            .appendChild(this.buildSleepTimerRow());
         this.shadowRoot.querySelector('#station-list')
-               .appendChild(this.buildStationList());
+            .appendChild(this.buildStationList());
     }
 
     getStyles() {
-        // Encapsulated styles in Shadow DOM.
         return `<style>
             ha-card {
                 background-color: #333;
@@ -62,10 +58,8 @@ class JukeboxCard extends HTMLElement {
                 flex-direction: row;
                 align-items: center;
                 margin: 8px 0;
-            }   border: 1px dashed red; /* Temporary border for debugging */
-            .row:empty {ht: 40px;      /* Ensure row has visible height */
-                display: none;
-            }* Remove .row:empty rule so empty rows are visible */
+                min-height: 40px; /* Ensure row has visible height */
+            }
             ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
                 --paper-slider-knob-color: #fff;
                 --paper-slider-active-color: #fff;
@@ -77,7 +71,6 @@ class JukeboxCard extends HTMLElement {
                 --paper-icon-button-ink-color: #fff;
                 --paper-icon-button-icon-color: #fff;
             }
-            /* Additional style adjustments */
             paper-tab {
                 padding: 8px;
                 cursor: pointer;
@@ -98,7 +91,6 @@ class JukeboxCard extends HTMLElement {
             }
             this._tabs.appendChild(this.buildSpeakerSwitch(entityId, hass));
         });
-        // Activate first speaker
         const firstPlayingSpeakerIndex = this.findFirstPlayingIndex(hass);
         this._selectedSpeaker = this.config.entities[firstPlayingSpeakerIndex];
         this._tabs.setAttribute('selected', firstPlayingSpeakerIndex);
@@ -109,21 +101,17 @@ class JukeboxCard extends HTMLElement {
     buildStationList() {
         this._stationButtons = [];
         const stationList = document.createElement('div');
-        stationList.classList.add('row'); // using .row to collapse if empty
+        stationList.classList.add('row');
         this.config.links.forEach(linkCfg => {
             const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url);
             this._stationButtons.push(stationButton);
             stationList.appendChild(stationButton);
         });
-        // Notify update method on state change{
-        this._hassObservers.push(this.updateStationSwitchStates.bind(this));ilable.'));
-        return stationList;
-    }   // Notify update method on state change
         this._hassObservers.push(this.updateStationSwitchStates.bind(this));
-    buildVolumeSlider() {t;
-        const volumeContainer = document.createElement('div');
-        volumeContainer.className = 'volume center horizontal layout';
-        const muteButton = document.createElement('paper-icon-button');
+        return stationList;
+    }
+
+    buildVolumeSlider() {
         const volumeContainer = document.createElement('div');
         volumeContainer.className = 'volume center horizontal layout';
         const muteButton = document.createElement('paper-icon-button');
@@ -142,14 +130,12 @@ class JukeboxCard extends HTMLElement {
         volumeContainer.appendChild(muteButton);
         volumeContainer.appendChild(slider);
         volumeContainer.appendChild(stopButton);
-        // Volume observer to set display and update values.
         this._hassObservers.push(hass => {
             if (!this._selectedSpeaker) {
                 console.error('(DEBUG) no _selectedSpeaker defined');
                 return;
             }
             const state = hass.states[this._selectedSpeaker];
-            // Always show controls regardless of state:
             slider.style.display = 'block';
             muteButton.style.display = 'block';
             stopButton.style.display = 'block';
@@ -231,24 +217,6 @@ class JukeboxCard extends HTMLElement {
         this.hass.callService('media_player', 'media_stop', {
             entity_id: this._selectedSpeaker
         });
-    }
-
-    onSleep() {
-        const input = prompt('Enter sleep time in minutes:', '5');
-        if (!input) return;
-        const minutes = parseInt(input, 10);
-        if (isNaN(minutes) || minutes <= 0) {
-            alert('Please enter a valid positive integer.');
-            return;
-        }
-        const entity = this._selectedSpeaker || 'media_player.default';
-        console.log(`(DEBUG) sleep timer set for ${minutes} minutes on: ${entity}`);
-        setTimeout(() => {
-            console.log(`(DEBUG) sleep timer fired for entity: ${entity}`);
-            this.hass.callService('media_player', 'media_stop', {
-                entity_id: entity
-            }).catch(err => console.error('(DEBUG) media_stop service call failed:', err));
-        }, minutes * 60000);
     }
 
     updateStationSwitchStates(hass) {
