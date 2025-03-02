@@ -36,7 +36,7 @@ Grab a copy of [jukebox.js](./jukebox.js) and save it into your home-assistant's
 
 ### Configuration
 Find stream URLs, e.g. on [Radio-Browser.info](http://www.radio-browser.info/gui/#/)
-See this example setting a couple of Web radios to my two chromecast players.
+See this examp le setting a couple of Web radios to my two chromecast players.
 
 *Excerpt of ui-lovelace.yaml*
 ```
