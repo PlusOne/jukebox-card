@@ -41,7 +41,7 @@ See this examp le setting a couple of Web radios to my two chromecast players.
 *Excerpt of ui-lovelace.yaml*
 ```
 resources:
-  - url: /local/jukebox-card.js
+  - url: /community_plugin/jukebox-card-extended/jukebox-card-ext.js
     type: module
 views:
 - name: Example
@@ -65,10 +65,4 @@ views:
     entities:
       - media_player.wuerfel_wohnzimmer
       - media_player.wuerfel_kueche
-```
-
-```yaml
-resources:
-  - url: /community_plugin/jukebox-card/jukebox-card.js
-    type: module
 ```
