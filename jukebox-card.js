@@ -80,6 +80,9 @@ class JukeboxCard extends HTMLElement {
         stopButton.setAttribute('disabled', true);
         stopButton.addEventListener('click', this.onStop.bind(this));
 
+        const sleepButton = document.createElement('paper-icon-button');
+        sleepButton.icon = 'hass:timer';
+        sleepButton.addEventListener('click', this.onSleep.bind(this));
 
         this._hassObservers.push(hass => {
             if (!this._selectedSpeaker || !hass.states[this._selectedSpeaker]) {
@@ -124,6 +127,7 @@ class JukeboxCard extends HTMLElement {
         volumeContainer.appendChild(muteButton);
         volumeContainer.appendChild(slider);
         volumeContainer.appendChild(stopButton);
+        volumeContainer.appendChild(sleepButton);
         return volumeContainer;
     }
 
@@ -149,6 +153,22 @@ class JukeboxCard extends HTMLElement {
         this.hass.callService('media_player', 'media_stop', {
             entity_id: this._selectedSpeaker
         });
+    }
+
+    onSleep() {
+        const input = prompt('Enter sleep time in minutes:', '5');
+        if (!input) return;
+        const minutes = parseInt(input, 10);
+        if (isNaN(minutes) || minutes <= 0) {
+            alert('Please enter a valid positive integer.');
+            return;
+        }
+
+        setTimeout(() => {
+            this.hass.callService('media_player', 'media_stop', {
+                entity_id: this._selectedSpeaker
+            });
+        }, minutes * 60000);
     }
 
     updateStationSwitchStates(hass) {
