@@ -146,23 +146,17 @@ class JukeboxCard extends HTMLElement {
                 return;
             }
             const state = hass.states[this._selectedSpeaker];
-            if (!state) {
-                console.warn('(DEBUG) no state found for', this._selectedSpeaker);
-                slider.value = 50;
-                stopButton.setAttribute('disabled', true);
-                muteButton.setAttribute('icon', 'hass:volume-high');
-                slider.style.display = 'block';
-                muteButton.style.display = 'block';
-                stopButton.style.display = 'block';
-                return;
-            }
-            const speakerState = state.attributes;
-            slider.removeAttribute('hidden');
-            stopButton.removeAttribute('hidden');
-            muteButton.removeAttribute('hidden');
+            // Always show controls regardless of state:
             slider.style.display = 'block';
             muteButton.style.display = 'block';
             stopButton.style.display = 'block';
+            if (!state) {
+                slider.value = 50;
+                stopButton.setAttribute('disabled', true);
+                muteButton.setAttribute('icon', 'hass:volume-high');
+                return;
+            }
+            const speakerState = state.attributes;
             const volLevel = speakerState.hasOwnProperty('volume_level') ? speakerState.volume_level : 0;
             slider.value = volLevel * 100;
             if (state.state === 'playing') {
