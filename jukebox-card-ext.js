@@ -8,8 +8,11 @@ class JukeboxCard extends HTMLElement {
             card.appendChild(this.content);
             this.appendChild(card);
 
+            // Append controls in separate rows for clarity:
             this.content.appendChild(this.buildSpeakerSwitches(hass));
             this.content.appendChild(this.buildVolumeSlider());
+            // Append sleep timer row here so it's always visible
+            this.content.appendChild(this.buildSleepTimerRow());
             this.content.appendChild(this.buildStationList());
         }
 
@@ -83,9 +86,7 @@ class JukeboxCard extends HTMLElement {
         volumeContainer.appendChild(muteButton);
         volumeContainer.appendChild(slider);
         volumeContainer.appendChild(stopButton);
-        // Removed sleep button from here
-        // Append the extra sleep timer row after volume controls
-        volumeContainer.appendChild(this.buildSleepTimerRow());
+        // Removed sleep timer from here
 
         this._hassObservers.push(hass => {
             if (!this._selectedSpeaker) {
