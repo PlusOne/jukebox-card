@@ -65,7 +65,7 @@ class JukeboxCard extends HTMLElement {
         volumeContainer.className = 'volume center horizontal layout';
 
         const muteButton = document.createElement('paper-icon-button');
-        muteButton.icon = 'hass:volume-high';
+        muteButton.setAttribute('icon', 'hass:volume-high');
         muteButton.isMute = false;
         muteButton.addEventListener('click', this.onMuteUnmute.bind(this));
 
@@ -75,13 +75,13 @@ class JukeboxCard extends HTMLElement {
         slider.addEventListener('change', this.onChangeVolumeSlider.bind(this));
         slider.className = 'flex';
 
-        const stopButton = document.createElement('paper-icon-button')
-        stopButton.icon = 'hass:stop';
+        const stopButton = document.createElement('paper-icon-button');
+        stopButton.setAttribute('icon', 'hass:stop');
         stopButton.setAttribute('disabled', true);
         stopButton.addEventListener('click', this.onStop.bind(this));
 
         const sleepButton = document.createElement('paper-icon-button');
-        sleepButton.icon = 'hass:timer';
+        sleepButton.setAttribute('icon', 'hass:timer');
         sleepButton.addEventListener('click', this.onSleep.bind(this));
 
         this._hassObservers.push(hass => {
