@@ -1,4 +1,4 @@
-class JukeboxCard extends HTMLElement {
+class JukeboxBoxExtended extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -7,17 +7,8 @@ class JukeboxCard extends HTMLElement {
     set hass(hass) {
         if (!this.content) {
             this._hassObservers = [];
-            this.appendChild(getStyle());
-            const card = document.createElement('ha-card');
-            this.content = document.createElement('div');
-            card.appendChild(this.content);
-            this.appendChild(card);
-
-            this.content.appendChild(this.buildSpeakerSwitches(hass));
-            this.content.appendChild(this.buildVolumeSlider());
-            this.content.appendChild(this.buildStationList());
+            this.renderStructure();
         }
-
         this._hass = hass;
         this._hassObservers.forEach(listener => listener(hass));
     }
@@ -26,40 +17,89 @@ class JukeboxCard extends HTMLElement {
         return this._hass;
     }
 
+    renderStructure() {
+        this.shadowRoot.innerHTML = `
+            <ha-card>
+              <style>
+                ha-card {
+                    background-color: #333;
+                    color: #fff;
+                    padding: 16px;
+                    font-family: sans-serif;
+                }
+                #content {
+                    display: flex;
+                    flex-direction: column;
+                    margin: 0;
+                    padding: 0;
+                }
+                .row {
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    margin: 8px 0;
+                    min-height: 40px;
+                }
+                ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
+                    --paper-slider-knob-color: #fff;
+                    --paper-slider-active-color: #fff;
+                    --paper-slider-pin-color: #fff;
+                    color: #fff;
+                }
+                paper-icon-button {
+                    color: #fff !important;
+                    --paper-icon-button-ink-color: #fff;
+                    --paper-icon-button-icon-color: #fff;
+                }
+                paper-tab {
+                    padding: 8px;
+                    cursor: pointer;
+                }
+              </style>
+              <div id="content">
+                <div id="speaker-switches" class="row"></div>
+                <div id="volume-row" class="row"></div>
+                <div id="station-list" class="row"></div>
+              </div>
+            </ha-card>
+        `;
+        this.shadowRoot.querySelector('#speaker-switches')
+            .appendChild(this.buildSpeakerSwitches(this._hass));
+        this.shadowRoot.querySelector('#volume-row')
+            .appendChild(this.buildVolumeSlider());
+        this.shadowRoot.querySelector('#station-list')
+            .appendChild(this.buildStationList());
+    }
+
     buildSpeakerSwitches(hass) {
-        this._tabs = document.createElement('paper-tabs');
-        this._tabs.setAttribute('scrollable', true);
-        this._tabs.addEventListener('iron-activate', (e) => this.onSpeakerSelect(e.detail.item.entityId));
+        const tabs = document.createElement('paper-tabs');
+        tabs.setAttribute('scrollable', true);
+        tabs.addEventListener('iron-activate', (e) => this.onSpeakerSelect(e.detail.item.entityId));
 
         this.config.entities.forEach(entityId => {
             if (!hass.states[entityId]) {
                 console.log('Jukebox: No State for entity', entityId);
                 return;
             }
-            this._tabs.appendChild(this.buildSpeakerSwitch(entityId, hass));
+            tabs.appendChild(this.buildSpeakerSwitch(entityId, hass));
         });
 
-        // automatically activate the first speaker that's playing
         const firstPlayingSpeakerIndex = this.findFirstPlayingIndex(hass);
         this._selectedSpeaker = this.config.entities[firstPlayingSpeakerIndex];
-        this._tabs.setAttribute('selected', firstPlayingSpeakerIndex);
+        tabs.setAttribute('selected', firstPlayingSpeakerIndex);
 
-        return this._tabs;
+        return tabs;
     }
 
     buildStationList() {
-        this._stationButtons = [];
-
         const stationList = document.createElement('div');
         stationList.classList.add('station-list');
 
         this.config.links.forEach(linkCfg => {
-            const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url)
-            this._stationButtons.push(stationButton);
+            const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url);
             stationList.appendChild(stationButton);
         });
 
-        // make sure the update method is notified of a change
         this._hassObservers.push(this.updateStationSwitchStates.bind(this));
 
         return stationList;
@@ -80,7 +120,7 @@ class JukeboxCard extends HTMLElement {
         slider.addEventListener('change', this.onChangeVolumeSlider.bind(this));
         slider.className = 'flex';
 
-        const stopButton = document.createElement('paper-icon-button')
+        const stopButton = document.createElement('paper-icon-button');
         stopButton.icon = 'hass:stop';
         stopButton.setAttribute('disabled', true);
         stopButton.addEventListener('click', this.onStop.bind(this));
@@ -91,13 +131,12 @@ class JukeboxCard extends HTMLElement {
             }
             const speakerState = hass.states[this._selectedSpeaker].attributes;
 
-            // no speaker level? then hide mute button and volume
             if (!speakerState.hasOwnProperty('volume_level')) {
                 slider.setAttribute('hidden', true);
-                stopButton.setAttribute('hidden', true)
+                stopButton.setAttribute('hidden', true);
             } else {
                 slider.removeAttribute('hidden');
-                stopButton.removeAttribute('hidden')
+                stopButton.removeAttribute('hidden');
             }
 
             if (!speakerState.hasOwnProperty('is_volume_muted')) {
@@ -171,7 +210,7 @@ class JukeboxCard extends HTMLElement {
             if (!stationSwitch.hasAttribute('raised') && stationSwitch.stationUrl === playingUrl) {
                 stationSwitch.setAttribute('raised', true);
             }
-        })
+        });
     }
 
     buildStationSwitch(name, url) {
@@ -198,13 +237,6 @@ class JukeboxCard extends HTMLElement {
         });
     }
 
-    /***
-     * returns the numeric index of the first entity in a "Playing" state, or 0 (first index).
-     *
-     * @param hass
-     * @returns {number}
-     * @private
-     */
     findFirstPlayingIndex(hass) {
         return Math.max(0, this.config.entities.findIndex(entityId => {
             return hass.states[entityId] && hass.states[entityId].state === 'playing';
@@ -215,7 +247,7 @@ class JukeboxCard extends HTMLElement {
         const entity = hass.states[entityId];
 
         const btn = document.createElement('paper-tab');
-        btn.entityId = entityId;        
+        btn.entityId = entityId;
         btn.innerText = hass.states[entityId].attributes.friendly_name;
         return btn;
     }
@@ -232,68 +264,4 @@ class JukeboxCard extends HTMLElement {
     }
 }
 
-function getStyle() {
-    const frag = document.createDocumentFragment();
-
-    const included = document.createElement('style');
-    included.setAttribute('include', 'iron-flex iron-flex-alignment');
-
-    const ownStyle = document.createElement('style');
-    ownStyle.innerHTML = `
-    .layout.horizontal, .layout.vertical {
-        display: -ms-flexbox;
-        display: -webkit-flex;
-        display: flex;
-    }
-    
-    .layout.horizontal {
-        -ms-flex-direction: row;
-        -webkit-flex-direction: row;
-        flex-direction: row;
-    }
-    
-    .layout.center, .layout.center-center {
-        -ms-flex-align: center;
-        -webkit-align-items: center;
-        align-items: center;
-    }
-    
-    .flex {
-        ms-flex: 1 1 0.000000001px;
-        -webkit-flex: 1;
-        flex: 1;
-        -webkit-flex-basis: 0.000000001px;
-        flex-basis: 0.000000001px;
-    }
-    
-    [hidden] {
-        display: none !important;
-    }
-    
-    .volume {
-        padding: 10px 20px;
-    }
-    
-    mwc-button.juke-toggle {
-        --mdc-theme-primary: var(--primary-text-color);
-    }
-    
-    mwc-button.juke-toggle[raised] {
-        --mdc-theme-primary: var(--primary-color);
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-    }
-    
-    paper-tabs {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-        --paper-tabs-selection-bar-color: var(--text-primary-color, #FFF);
-    }
-    `;
-
-    frag.appendChild(included);
-    frag.appendChild(ownStyle);
-    return frag;
-}
-
-customElements.define('jukebox-card-ext', JukeboxCard);
+customElements.define('jukebox-box-extended', JukeboxBoxExtended);
