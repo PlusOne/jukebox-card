@@ -1,68 +1,68 @@
-# Jukebox Card for Home-Assistant
+# Lovelace Jukebox Card Extended
 
-This is a media player UI for Home-Assistant leveraging the potential of the excellent new
-[Lovelace UI.](https://www.home-assistant.io/lovelace/)
+This custom Lovelace card provides a media player interface for Home Assistant. It allows you to select speakers, adjust volume, and control media playback—including a sleep timer to automatically stop media after a specified duration.
 
-It allows you to configure a set of web radio stations (or possibly other radio media IDs such as spotify), and
-play them to media player entities of your choice, like chromecast or spotify connect listeners.
+## Features
+- **Speaker Selection:** Toggle between media players.
+- **Volume Control:** Adjust volume and mute/unmute.
+- **Stop Button:** Immediately stop media playback.
+- **Sleep Timer:** Prompts for minutes and stops media after the delay.
+- **Station List:** Quick access to predefined streaming URLs.
 
-You can send different media to different players, which makes it usable for multi-room setups: Let your kids listen
-to some *Frozen*, while you're Jazzing in the Kitchen. Volume-Level is handled separately, too.
+## Installation
 
-## Screenshot
-![alt text](https://github.com/lukx/home-assistant-jukebox/blob/master/screenshot.png?raw=true "See the jukebox in action")
+1. **Copy the File:**  
+   Place `jukebox-card-ext.js` in your Home Assistant configuration under the directory:  
+   `/config/www/community_plugin/jukebox-card-extended/`
 
-## Acknowledgement
-Apart from the home-assistant project, I need to say thanks to User [Bob_NL](https://community.home-assistant.io/u/Bob_NL)
-who made his evergreen [Chromecast Radio](https://community.home-assistant.io/t/chromecast-radio-with-station-and-player-selection/12732)
-available to all of us in the Home-Assistant forums. This jukebox is heavily deriving from the great work of all the
-people in the thread.
+2. **Configure Lovelace Resource:**  
+   In your Lovelace configuration (either YAML or UI resources), add:
 
-## Usage
-### Preparation
-This will take time, but do set up your home-assistant to use the new [Lovelace](https://www.home-assistant.io/lovelace/)
-frontend, if you're not using it yet.
+   ```yaml
+   resources:
+     - url: /community_plugin/jukebox-card-extended/jukebox-card-ext.js
+       type: module
+   ```
 
-### Installation
-Grab a copy of [jukebox.js](./jukebox.js) and save it into your home-assistant's configuration, in a folder called
-"www". So:
+## Example Configuration
 
-```
-- /.homeassistant
-|___ /configuration.yaml
-|___ /www/jukebox-card.js
-```
+Below is an example configuration snippet for your Lovelace dashboard:
 
-
-### Configuration
-Find stream URLs, e.g. on [Radio-Browser.info](http://www.radio-browser.info/gui/#/)
-See this examp le setting a couple of Web radios to my two chromecast players.
-
-*Excerpt of ui-lovelace.yaml*
-```
-resources:
-  - url: /community_plugin/jukebox-card-extended/jukebox-card-ext.js
-    type: module
+```yaml
 views:
-- name: Example
-  cards:
-  - type: "custom:jukebox-card-ext"
-    links:
-      - url: http://streams.greenhost.nl:8080/jazz
-        name: Concertzender Jazz
-      - url: http://fs-insidejazz.fast-serv.com:8282/;stream.nsv
-        name: Inside Jazz
-      - url: http://stream.srg-ssr.ch/m/rsj/mp3_128
-        name: Radio Swiss Jazz
-      - url: http://stream.beachlatinoradio.com:8030/;?d=
-        name: Beach Latino Radio
-      - url: http://streams.calmradio.com/api/43/128/stream/;?d=
-        name: Calm Radio
-      - url: http://swr-swr1-bw.cast.addradio.de/swr/swr1/bw/mp3/128/stream.mp3
-        name: SWR 1
-      - url: http://94.23.252.14:8067/stream
-        name: Nature Sounds
-    entities:
-      - media_player.wuerfel_wohnzimmer
-      - media_player.wuerfel_kueche
+  - title: Example
+    cards:
+      - type: "custom:jukebox-card-ext"
+        entities:
+          - media_player.living_room
+          - media_player.kitchen
+        links:
+          - name: Jazz Station
+            url: http://example.com/jazz-stream
+          - name: Rock Station
+            url: http://example.com/rock-stream
 ```
+
+## HACS Integration
+
+If you're using HACS, ensure that your `hacs.json` is configured as follows:
+
+```json
+{
+    "name": "Lovelace Jukebox Card Extended",
+    "render_readme": true,
+    "filename": "jukebox-card-ext.js"
+}
+```
+
+## Troubleshooting
+
+- **Resource URL:** Verify that the resource URL in your Lovelace config points correctly to `/community_plugin/jukebox-card-extended/jukebox-card-ext.js`.
+- **Card Type:** Make sure the card type in your configuration is `"custom:jukebox-card-ext"`.
+- **Sleep Timer:** If the sleep timer isn’t stopping the media, check your Home Assistant logs and browser console for errors. Confirm that the service `media_player.media_stop` is available and that your entity IDs are correct.
+
+## Acknowledgements
+
+Thanks to the Home Assistant community for the inspiration and foundational work that led to this extended card.
+
+Enjoy your enhanced media experience with Lovelace Jukebox Card Extended!
