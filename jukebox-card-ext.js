@@ -191,11 +191,13 @@ class JukeboxCard extends HTMLElement {
             alert('Please enter a valid positive integer.');
             return;
         }
-        console.log(`Setting sleep timer for ${minutes} minutes on entity: ${this._selectedSpeaker}`);
+        // Preserve current selected speaker
+        const entity = this._selectedSpeaker;
+        console.log(`Setting sleep timer for ${minutes} minutes on entity: ${entity}`);
         setTimeout(() => {
-            console.log('Sleep timer fired. Stopping media on:', this._selectedSpeaker);
+            console.log('Sleep timer fired. Stopping media on:', entity);
             this.hass.callService('media_player', 'media_stop', {
-                entity_id: this._selectedSpeaker
+                entity_id: entity
             });
         }, minutes * 60000);
     }
