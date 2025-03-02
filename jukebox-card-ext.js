@@ -80,9 +80,12 @@ class JukeboxCard extends HTMLElement {
         stopButton.setAttribute('disabled', true);
         stopButton.addEventListener('click', this.onStop.bind(this));
 
-        const sleepButton = document.createElement('paper-icon-button');
-        sleepButton.setAttribute('icon', 'hass:timer');
-        sleepButton.addEventListener('click', this.onSleep.bind(this));
+        volumeContainer.appendChild(muteButton);
+        volumeContainer.appendChild(slider);
+        volumeContainer.appendChild(stopButton);
+        // Removed sleep button from here
+        // Append the extra sleep timer row after volume controls
+        volumeContainer.appendChild(this.buildSleepTimerRow());
 
         this._hassObservers.push(hass => {
             if (!this._selectedSpeaker || !hass.states[this._selectedSpeaker]) {
@@ -124,12 +127,41 @@ class JukeboxCard extends HTMLElement {
             }
         });
 
-        volumeContainer.appendChild(muteButton);
-        volumeContainer.appendChild(slider);
-        volumeContainer.appendChild(stopButton);
-        volumeContainer.appendChild(sleepButton);
-        console.log('Sleep button appended:', sleepButton);
         return volumeContainer;
+    }
+
+    buildSleepTimerRow() {
+        const sleepContainer = document.createElement('div');
+        sleepContainer.className = 'sleep-timer center horizontal layout';
+        
+        // Slider for setting sleep time in minutes
+        const sleepSlider = document.createElement('ha-paper-slider');
+        sleepSlider.min = 0;
+        sleepSlider.max = 120; // e.g. 0 to 120 minutes
+        sleepSlider.value = 5; // default value
+        sleepSlider.addEventListener('change', (e) => {
+            // Support different event objects across browsers
+            this._sleepMinutes = parseInt(e.detail?.value || e.target.value, 10) || 5;
+        });
+        sleepSlider.className = 'flex';
+
+        // Button to enable sleep timer with set minutes
+        const sleepSetButton = document.createElement('paper-icon-button');
+        sleepSetButton.setAttribute('icon', 'hass:timer');
+        sleepSetButton.addEventListener('click', () => {
+            const minutes = this._sleepMinutes || 5;
+            console.log(`Setting sleep timer for ${minutes} minutes on entity: ${this._selectedSpeaker}`);
+            setTimeout(() => {
+                console.log('Sleep timer fired. Stopping media on:', this._selectedSpeaker);
+                this.hass.callService('media_player', 'media_stop', {
+                    entity_id: this._selectedSpeaker
+                });
+            }, minutes * 60000);
+        });
+        
+        sleepContainer.appendChild(sleepSlider);
+        sleepContainer.appendChild(sleepSetButton);
+        return sleepContainer;
     }
 
     onSpeakerSelect(entityId) {
