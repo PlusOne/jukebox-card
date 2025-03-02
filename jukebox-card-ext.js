@@ -156,14 +156,20 @@ class JukeboxCard extends HTMLElement {
                 slider.value = 50;
                 stopButton.setAttribute('disabled', true);
                 muteButton.setAttribute('icon', 'hass:volume-high');
-                // DO NOT hide the slider, leave it visible even if state missing
+                // Force visibility regardless
+                slider.style.display = 'block';
+                muteButton.style.display = 'block';
+                stopButton.style.display = 'block';
                 return;
             }
             const speakerState = state.attributes;
-            // ALWAYS show controls; remove any hidden attribute
+            // ALWAYS show controls; remove hidden attribute and force display style
             slider.removeAttribute('hidden');
             stopButton.removeAttribute('hidden');
             muteButton.removeAttribute('hidden');
+            slider.style.display = 'block';
+            muteButton.style.display = 'block';
+            stopButton.style.display = 'block';
             
             // Use default volume value if missing instead of hiding controls
             const volLevel = (speakerState.hasOwnProperty('volume_level')) ? speakerState.volume_level : 0;
