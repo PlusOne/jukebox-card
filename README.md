@@ -2,6 +2,9 @@
 
 This custom Lovelace card provides a media player interface for Home Assistant. It allows you to select speakers, adjust volume, and control media playback—including a sleep timer to automatically stop media after a specified duration.
 
+## Pre-release Note
+**This version is in its pre-pre phase and has been adapted to build in some of the most wanted features by the community.** Expect further improvements and refinements as new feedback is incorporated.
+
 ## Features
 - **Speaker Selection:** Toggle between media players.
 - **Volume Control:** Adjust volume and mute/unmute.
