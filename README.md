@@ -46,7 +46,7 @@ resources:
 views:
 - name: Example
   cards:
-  - type: "custom:jukebox-card"
+  - type: "custom:jukebox-card-ext"
     links:
       - url: http://streams.greenhost.nl:8080/jazz
         name: Concertzender Jazz
