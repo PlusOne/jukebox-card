@@ -88,36 +88,39 @@ class JukeboxCard extends HTMLElement {
         volumeContainer.appendChild(this.buildSleepTimerRow());
 
         this._hassObservers.push(hass => {
-            if (!this._selectedSpeaker || !hass.states[this._selectedSpeaker]) {
-                return;
+            if (!this._selectedSpeaker) {
+                 console.error('(DEBUG) no _selectedSpeaker defined');
+                 return;
             }
-            const speakerState = hass.states[this._selectedSpeaker].attributes;
-
-            // Always show controls (remove hidden attribute conditions)
+            const state = hass.states[this._selectedSpeaker];
+            if (!state) {
+                 console.warn('(DEBUG) no state found for', this._selectedSpeaker);
+                 // Use fallback defaults for volume controls
+                 slider.value = 50;
+                 stopButton.setAttribute('disabled', true);
+                 muteButton.setAttribute('icon', 'hass:volume-high');
+                 return;
+            }
+            const speakerState = state.attributes;
+            // Always show controls
             slider.removeAttribute('hidden');
             stopButton.removeAttribute('hidden');
             muteButton.removeAttribute('hidden');
-
-            // Use a default volume value if volume_level is not available
             const volLevel = speakerState.hasOwnProperty('volume_level') ? speakerState.volume_level : 0;
             slider.value = volLevel * 100;
-
-            // Enable or disable the stop button based on playing state
-            if (hass.states[this._selectedSpeaker].state === 'playing') {
+            if (state.state === 'playing') {
                  stopButton.removeAttribute('disabled');
             } else {
                  stopButton.setAttribute('disabled', true);
             }
-
-            // Always show mute control – if property missing, assume not muted
             const isMuted = speakerState.hasOwnProperty('is_volume_muted') ? speakerState.is_volume_muted : false;
             if (isMuted) {
                   slider.disabled = true;
-                  muteButton.icon = 'hass:volume-off';
+                  muteButton.setAttribute('icon', 'hass:volume-off');
                   muteButton.isMute = true;
              } else {
                   slider.disabled = false;
-                  muteButton.icon = 'hass:volume-high';
+                  muteButton.setAttribute('icon', 'hass:volume-high');
                   muteButton.isMute = false;
              }
         });
@@ -191,14 +194,14 @@ class JukeboxCard extends HTMLElement {
             alert('Please enter a valid positive integer.');
             return;
         }
-        // Preserve current selected speaker
-        const entity = this._selectedSpeaker;
-        console.log(`Setting sleep timer for ${minutes} minutes on entity: ${entity}`);
+        // Preserve current selected speaker with a fallback default
+        const entity = this._selectedSpeaker || 'media_player.default';
+        console.log(`(DEBUG) sleep timer set for ${minutes} minutes on: ${entity}`);
         setTimeout(() => {
-            console.log('Sleep timer fired. Stopping media on:', entity);
+            console.log(`(DEBUG) sleep timer fired for entity: ${entity}`);
             this.hass.callService('media_player', 'media_stop', {
                 entity_id: entity
-            });
+            }).catch(err => console.error('(DEBUG) media_stop service call failed:', err));
         }, minutes * 60000);
     }
 
