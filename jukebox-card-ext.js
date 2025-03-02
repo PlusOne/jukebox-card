@@ -342,41 +342,8 @@ class JukeboxCard extends HTMLElement {
     }
 
     getCardSize() {
-
-
-
-
-
-
-customElements.define('jukebox-card-ext', JukeboxCard);}    }        return 3;function getStyle() {
-    const frag = document.createDocumentFragment();
-    const included = document.createElement('style');
-    included.setAttribute('include', 'iron-flex iron-flex-alignment');
-    const ownStyle = document.createElement('style');
-    ownStyle.innerHTML = `
-        /* Set a dark background for the card for contrast */
-        ha-card {
-            background-color: #333;
-            color: #fff;
-            padding: 16px;
-            font-family: sans-serif;
-        }
-        .layout.horizontal, .layout.vertical {
-            display: flex;
-        }
-        .volume {
-            padding: 10px 20px;
-            min-height: 50px; /* Ensure volume row remains visible */
-        }
-        paper-icon-button, ha-paper-slider {
-            color: #fff !important;
-        }
-        ha-paper-slider {
-            --paper-slider-knob-color: #fff;
-            --paper-slider-active-color: #fff;
-        }
-    `;
-    frag.appendChild(included);
-    frag.appendChild(ownStyle);
-    return frag;
+        return 3;
+    }
 }
+
+customElements.define('jukebox-card-ext', JukeboxCard);
