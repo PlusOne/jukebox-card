@@ -1,21 +1,15 @@
 class JukeboxCard extends HTMLElement {
+    constructor() {
+        super();
+        // Use Shadow DOM for encapsulation.
+        this.attachShadow({ mode: 'open' });
+    }
+
     set hass(hass) {
-        if (!this.content) {
+        if (!this.shadowRoot.querySelector('ha-card')) {
             this._hassObservers = [];
-            this.appendChild(getStyle());
-            const card = document.createElement('ha-card');
-            this.content = document.createElement('div');
-            card.appendChild(this.content);
-            this.appendChild(card);
-
-            // Append controls in separate rows for clarity:
-            this.content.appendChild(this.buildSpeakerSwitches(hass));
-            this.content.appendChild(this.buildVolumeSlider());
-            // Append sleep timer row here so it's always visible
-            this.content.appendChild(this.buildSleepTimerRow());
-            this.content.appendChild(this.buildStationList());
+            this.renderStructure();
         }
-
         this._hass = hass;
         this._hassObservers.forEach(listener => listener(hass));
     }
@@ -24,11 +18,74 @@ class JukeboxCard extends HTMLElement {
         return this._hass;
     }
 
+    renderStructure() {
+        // Use a template literal for the structure:
+        this.shadowRoot.innerHTML = `
+            <ha-card>
+              <div id="content">
+                <div id="speaker-switches"></div>
+                <div id="volume-row" class="row"></div>
+                <div id="sleep-row" class="row"></div>
+                <div id="station-list"></div>
+              </div>
+              ${this.getStyles()}
+            </ha-card>
+        `;
+        // Render each row using current config methods.
+        this.shadowRoot.querySelector('#speaker-switches')
+               .appendChild(this.buildSpeakerSwitches(this._hass));
+        this.shadowRoot.querySelector('#volume-row')
+               .appendChild(this.buildVolumeSlider());
+        this.shadowRoot.querySelector('#sleep-row')
+               .appendChild(this.buildSleepTimerRow());
+        this.shadowRoot.querySelector('#station-list')
+               .appendChild(this.buildStationList());
+    }
+
+    getStyles() {
+        // Encapsulated styles in Shadow DOM.
+        return `<style>
+            ha-card {
+                background-color: #333;
+                color: #fff;
+                padding: 16px;
+                font-family: sans-serif;
+            }
+            .row {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                margin: 8px 0;
+            }
+            ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
+                --paper-slider-knob-color: #fff;
+                --paper-slider-active-color: #fff;
+                --paper-slider-pin-color: #fff;
+                color: #fff;
+            }
+            paper-icon-button {
+                color: #fff !important;
+                --paper-icon-button-ink-color: #fff;
+                --paper-icon-button-icon-color: #fff;
+            }
+            /* Additional style adjustments */
+            #content {
+                display: flex;
+                flex-direction: column;
+            }
+            paper-tab {
+                padding: 8px;
+                cursor: pointer;
+            }
+        </style>`;
+    }
+
     buildSpeakerSwitches(hass) {
+        const container = document.createElement('div');
+        container.className = 'row';
         this._tabs = document.createElement('paper-tabs');
         this._tabs.setAttribute('scrollable', true);
         this._tabs.addEventListener('iron-activate', (e) => this.onSpeakerSelect(e.detail.item.entityId));
-
         this.config.entities.forEach(entityId => {
             if (!hass.states[entityId]) {
                 console.log('Jukebox: No State for entity', entityId);
@@ -36,13 +93,12 @@ class JukeboxCard extends HTMLElement {
             }
             this._tabs.appendChild(this.buildSpeakerSwitch(entityId, hass));
         });
-
-        // automatically activate the first speaker that's playing
+        // Activate first speaker
         const firstPlayingSpeakerIndex = this.findFirstPlayingIndex(hass);
         this._selectedSpeaker = this.config.entities[firstPlayingSpeakerIndex];
         this._tabs.setAttribute('selected', firstPlayingSpeakerIndex);
-
-        return this._tabs;
+        container.appendChild(this._tabs);
+        return container;
     }
 
     buildStationList() {
@@ -282,97 +338,6 @@ class JukeboxCard extends HTMLElement {
     getCardSize() {
         return 3;
     }
-}
-
-function getStyle() {
-    const frag = document.createDocumentFragment();
-
-    const included = document.createElement('style');
-    included.setAttribute('include', 'iron-flex iron-flex-alignment');
-
-    const ownStyle = document.createElement('style');
-    ownStyle.innerHTML = `
-    /* Set a dark background for the card for contrast */
-    ha-card {
-        background-color: #333;
-        color: #fff;
-    }
-    
-    .layout.horizontal, .layout.vertical {
-        display: -ms-flexbox;
-        display: -webkit-flex;
-        display: flex;
-    }
-    
-    .layout.horizontal {
-        -ms-flex-direction: row;
-        -webkit-flex-direction: row;
-        flex-direction: row;
-    }
-    
-    .layout.center, .layout.center-center {
-        -ms-flex-align: center;
-        -webkit-align-items: center;
-        align-items: center;
-    }
-    
-    .flex {
-        ms-flex: 1 1 0.000000001px;
-        -webkit-flex: 1;
-        flex: 1;
-        -webkit-flex-basis: 0.000000001px;
-        flex-basis: 0.000000001px;
-    }
-    
-    [hidden] {
-        display: none !important;
-    }
-    
-    .volume {
-        padding: 10px 20px;
-    }
-    
-    mwc-button.juke-toggle {
-        --mdc-theme-primary: var(--primary-text-color);
-    }
-    
-    mwc-button.juke-toggle[raised] {
-        --mdc-theme-primary: var(--primary-color);
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-    }
-    
-    paper-tabs {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-        --paper-tabs-selection-bar-color: var(--text-primary-color, #FFF);
-    }
-    
-    /* Custom overrides to improve visibility: */
-    /* For paper-icon-buttons used in volume controls */
-    paper-icon-button {
-        color: #fff !important;
-        --paper-icon-button-ink-color: #fff;
-        --paper-icon-button-icon-color: #fff;
-    }
-    
-    /* For ha-paper-slider, define contrasting colors */
-    ha-paper-slider {
-        --paper-slider-knob-color: #fff;
-        --paper-slider-active-color: #fff;
-        --paper-slider-pin-color: #fff;
-        color: #fff;
-    }
-    
-    /* Ensure the sleep timer slider has similar contrast */
-    .sleep-timer ha-paper-slider {
-        --paper-slider-knob-color: #fff;
-        --paper-slider-active-color: #fff;
-    }
-    `;
-    frag.appendChild(included);
-    frag.appendChild(ownStyle);
-    return frag;
 }
 
 customElements.define('jukebox-card-ext', JukeboxCard);
