@@ -340,9 +340,27 @@ function getStyle() {
         color: var(--text-primary-color);
         --paper-tabs-selection-bar-color: var(--text-primary-color, #FFF);
     }
-            
+    
+    /* Custom overrides to make buttons and sliders white */
+    paper-icon-button {
+        color: white !important;
+        --paper-icon-button-ink-color: white;
+        --paper-icon-button-icon-color: white;
+    }
+    
+    ha-paper-slider {
+        --paper-slider-knob-color: white;
+        --paper-slider-active-color: white;
+        --paper-slider-pin-color: white;
+        color: white;
+    }
+    
+    /* Adjust sleep timer row (if needed) */
+    .sleep-timer ha-paper-slider {
+        --paper-slider-knob-color: white;
+        --paper-slider-active-color: white;
+    }
     `;
-
     frag.appendChild(included);
     frag.appendChild(ownStyle);
     return frag;
