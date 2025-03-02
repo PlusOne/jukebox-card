@@ -62,10 +62,10 @@ class JukeboxCard extends HTMLElement {
                 flex-direction: row;
                 align-items: center;
                 margin: 8px 0;
-            }
-            .row:empty {
+            }   border: 1px dashed red; /* Temporary border for debugging */
+            .row:empty {ht: 40px;      /* Ensure row has visible height */
                 display: none;
-            }
+            }* Remove .row:empty rule so empty rows are visible */
             ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
                 --paper-slider-knob-color: #fff;
                 --paper-slider-active-color: #fff;
@@ -115,12 +115,15 @@ class JukeboxCard extends HTMLElement {
             this._stationButtons.push(stationButton);
             stationList.appendChild(stationButton);
         });
-        // Notify update method on state change
-        this._hassObservers.push(this.updateStationSwitchStates.bind(this));
+        // Notify update method on state change{
+        this._hassObservers.push(this.updateStationSwitchStates.bind(this));ilable.'));
         return stationList;
-    }
-
-    buildVolumeSlider() {
+    }   // Notify update method on state change
+        this._hassObservers.push(this.updateStationSwitchStates.bind(this));
+    buildVolumeSlider() {t;
+        const volumeContainer = document.createElement('div');
+        volumeContainer.className = 'volume center horizontal layout';
+        const muteButton = document.createElement('paper-icon-button');
         const volumeContainer = document.createElement('div');
         volumeContainer.className = 'volume center horizontal layout';
         const muteButton = document.createElement('paper-icon-button');
