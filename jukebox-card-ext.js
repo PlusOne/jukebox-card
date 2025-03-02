@@ -51,11 +51,22 @@ class JukeboxCard extends HTMLElement {
                 padding: 16px;
                 font-family: sans-serif;
             }
+            #content {
+                display: flex;
+                flex-direction: column;
+                /* Remove margin or padding that might cause extra space */
+                margin: 0;
+                padding: 0;
+            }
             .row {
                 display: flex;
                 flex-direction: row;
                 align-items: center;
                 margin: 8px 0;
+            }
+            /* If a container is empty, force it to collapse */
+            .row:empty {
+                display: none;
             }
             ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
                 --paper-slider-knob-color: #fff;
@@ -68,15 +79,7 @@ class JukeboxCard extends HTMLElement {
                 --paper-icon-button-ink-color: #fff;
                 --paper-icon-button-icon-color: #fff;
             }
-            /* Additional style adjustments */
-            #content {
-                display: flex;
-                flex-direction: column;
-            }
-            paper-tab {
-                padding: 8px;
-                cursor: pointer;
-            }
+            /* Adjust additional container styles as needed */
         </style>`;
     }
 
