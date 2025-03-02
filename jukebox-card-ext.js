@@ -5,10 +5,19 @@ class JukeboxCard extends HTMLElement {
     }
 
     set hass(hass) {
-        if (!this.shadowRoot.querySelector('ha-card')) {
+        if (!this.content) {
             this._hassObservers = [];
-            this.renderStructure();
+            this.appendChild(getStyle());
+            const card = document.createElement('ha-card');
+            this.content = document.createElement('div');
+            card.appendChild(this.content);
+            this.appendChild(card);
+
+            this.content.appendChild(this.buildSpeakerSwitches(hass));
+            this.content.appendChild(this.buildVolumeSlider());
+            this.content.appendChild(this.buildStationList());
         }
+
         this._hass = hass;
         this._hassObservers.forEach(listener => listener(hass));
     }
@@ -17,76 +26,11 @@ class JukeboxCard extends HTMLElement {
         return this._hass;
     }
 
-    renderStructure() {
-        console.log('Rendering structure...');
-        this.shadowRoot.innerHTML = `
-            <ha-card>
-              <div id="content">
-                <div id="speaker-switches" class="row">Speaker Switches</div>
-                <div id="volume-row" class="row">Volume Controls</div>
-                <div id="sleep-row" class="row">Sleep Timer</div>
-                <div id="station-list" class="row">Station List</div>
-              </div>
-              ${this.getStyles()}
-            </ha-card>
-        `;
-        this.shadowRoot.querySelector('#speaker-switches')
-            .appendChild(this.buildSpeakerSwitches(this._hass));
-        this.shadowRoot.querySelector('#volume-row')
-            .appendChild(this.buildVolumeSlider());
-        this.shadowRoot.querySelector('#sleep-row')
-            .appendChild(this.buildSleepTimerRow());
-        this.shadowRoot.querySelector('#station-list')
-            .appendChild(this.buildStationList());
-    }
-
-    getStyles() {
-        return `<style>
-            ha-card {
-                background-color: #333;
-                color: #fff;
-                padding: 16px;
-                font-family: sans-serif;
-            }
-            #content {
-                display: flex;
-                flex-direction: column;
-                margin: 0;
-                padding: 0;
-            }
-            .row {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                margin: 8px 0;
-                min-height: 40px; /* Ensure row has visible height */
-                border: 1px solid red; /* Temporary border for debugging */
-            }
-            ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
-                --paper-slider-knob-color: #fff;
-                --paper-slider-active-color: #fff;
-                --paper-slider-pin-color: #fff;
-                color: #fff;
-            }
-            paper-icon-button {
-                color: #fff !important;
-                --paper-icon-button-ink-color: #fff;
-                --paper-icon-button-icon-color: #fff;
-            }
-            paper-tab {
-                padding: 8px;
-                cursor: pointer;
-            }
-        </style>`;
-    }
-
     buildSpeakerSwitches(hass) {
-        console.log('Building speaker switches...');
-        const container = document.createElement('div');
-        container.className = 'row';
         this._tabs = document.createElement('paper-tabs');
         this._tabs.setAttribute('scrollable', true);
         this._tabs.addEventListener('iron-activate', (e) => this.onSpeakerSelect(e.detail.item.entityId));
+
         this.config.entities.forEach(entityId => {
             if (!hass.states[entityId]) {
                 console.log('Jukebox: No State for entity', entityId);
@@ -94,115 +38,100 @@ class JukeboxCard extends HTMLElement {
             }
             this._tabs.appendChild(this.buildSpeakerSwitch(entityId, hass));
         });
+
+        // automatically activate the first speaker that's playing
         const firstPlayingSpeakerIndex = this.findFirstPlayingIndex(hass);
         this._selectedSpeaker = this.config.entities[firstPlayingSpeakerIndex];
         this._tabs.setAttribute('selected', firstPlayingSpeakerIndex);
-        container.appendChild(this._tabs);
-        return container;
+
+        return this._tabs;
     }
 
     buildStationList() {
-        console.log('Building station list...');
         this._stationButtons = [];
+
         const stationList = document.createElement('div');
-        stationList.classList.add('row');
+        stationList.classList.add('station-list');
+
         this.config.links.forEach(linkCfg => {
-            const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url);
+            const stationButton = this.buildStationSwitch(linkCfg.name, linkCfg.url)
             this._stationButtons.push(stationButton);
             stationList.appendChild(stationButton);
         });
+
+        // make sure the update method is notified of a change
         this._hassObservers.push(this.updateStationSwitchStates.bind(this));
+
         return stationList;
     }
 
     buildVolumeSlider() {
-        console.log('Building volume slider...');
         const volumeContainer = document.createElement('div');
         volumeContainer.className = 'volume center horizontal layout';
+
         const muteButton = document.createElement('paper-icon-button');
-        muteButton.setAttribute('icon', 'hass:volume-high');
+        muteButton.icon = 'hass:volume-high';
         muteButton.isMute = false;
         muteButton.addEventListener('click', this.onMuteUnmute.bind(this));
+
         const slider = document.createElement('ha-paper-slider');
         slider.min = 0;
         slider.max = 100;
         slider.addEventListener('change', this.onChangeVolumeSlider.bind(this));
         slider.className = 'flex';
-        const stopButton = document.createElement('paper-icon-button');
-        stopButton.setAttribute('icon', 'hass:stop');
+
+        const stopButton = document.createElement('paper-icon-button')
+        stopButton.icon = 'hass:stop';
         stopButton.setAttribute('disabled', true);
         stopButton.addEventListener('click', this.onStop.bind(this));
-        volumeContainer.appendChild(muteButton);
-        volumeContainer.appendChild(slider);
-        volumeContainer.appendChild(stopButton);
+
         this._hassObservers.push(hass => {
-            if (!this._selectedSpeaker) {
-                console.error('(DEBUG) no _selectedSpeaker defined');
+            if (!this._selectedSpeaker || !hass.states[this._selectedSpeaker]) {
                 return;
             }
-            const state = hass.states[this._selectedSpeaker];
-            slider.style.display = 'block';
-            muteButton.style.display = 'block';
-            stopButton.style.display = 'block';
-            if (!state) {
-                slider.value = 50;
-                stopButton.setAttribute('disabled', true);
-                muteButton.setAttribute('icon', 'hass:volume-high');
-                return;
+            const speakerState = hass.states[this._selectedSpeaker].attributes;
+
+            // no speaker level? then hide mute button and volume
+            if (!speakerState.hasOwnProperty('volume_level')) {
+                slider.setAttribute('hidden', true);
+                stopButton.setAttribute('hidden', true)
+            } else {
+                slider.removeAttribute('hidden');
+                stopButton.removeAttribute('hidden')
             }
-            const speakerState = state.attributes;
-            const volLevel = speakerState.hasOwnProperty('volume_level') ? speakerState.volume_level : 0;
-            slider.value = volLevel * 100;
-            if (state.state === 'playing') {
+
+            if (!speakerState.hasOwnProperty('is_volume_muted')) {
+                muteButton.setAttribute('hidden', true);
+            } else {
+                muteButton.removeAttribute('hidden');
+            }
+
+            if (hass.states[this._selectedSpeaker].state === 'playing') {
                 stopButton.removeAttribute('disabled');
             } else {
                 stopButton.setAttribute('disabled', true);
             }
-            const isMuted = speakerState.hasOwnProperty('is_volume_muted') ? speakerState.is_volume_muted : false;
-            if (isMuted) {
+
+            slider.value = speakerState.volume_level ? speakerState.volume_level * 100 : 0;
+
+            if (speakerState.is_volume_muted && !slider.disabled) {
                 slider.disabled = true;
-                muteButton.setAttribute('icon', 'hass:volume-off');
+                muteButton.icon = 'hass:volume-off';
                 muteButton.isMute = true;
-            } else {
+            } else if (!speakerState.is_volume_muted && slider.disabled) {
                 slider.disabled = false;
-                muteButton.setAttribute('icon', 'hass:volume-high');
+                muteButton.icon = 'hass:volume-high';
                 muteButton.isMute = false;
             }
         });
+
+        volumeContainer.appendChild(muteButton);
+        volumeContainer.appendChild(slider);
+        volumeContainer.appendChild(stopButton);
         return volumeContainer;
     }
 
-    buildSleepTimerRow() {
-        console.log('Building sleep timer row...');
-        const sleepContainer = document.createElement('div');
-        sleepContainer.className = 'sleep-timer center horizontal layout';
-        const sleepSlider = document.createElement('ha-paper-slider');
-        sleepSlider.min = 0;
-        sleepSlider.max = 120;
-        sleepSlider.value = 5;
-        sleepSlider.addEventListener('change', (e) => {
-            this._sleepMinutes = parseInt(e.detail?.value || e.target.value, 10) || 5;
-        });
-        sleepSlider.className = 'flex';
-        const sleepSetButton = document.createElement('paper-icon-button');
-        sleepSetButton.setAttribute('icon', 'hass:timer');
-        sleepSetButton.addEventListener('click', () => {
-            const minutes = this._sleepMinutes || 5;
-            console.log(`Setting sleep timer for ${minutes} minutes on entity: ${this._selectedSpeaker}`);
-            setTimeout(() => {
-                console.log(`(DEBUG) sleep timer fired for entity: ${this._selectedSpeaker}`);
-                this.hass.callService('media_player', 'media_stop', {
-                    entity_id: this._selectedSpeaker
-                }).catch(err => console.error('(DEBUG) media_stop service call failed:', err));
-            }, minutes * 60000);
-        });
-        sleepContainer.appendChild(sleepSlider);
-        sleepContainer.appendChild(sleepSetButton);
-        return sleepContainer;
-    }
-
     onSpeakerSelect(entityId) {
-        console.log(`Speaker selected: ${entityId}`);
         this._selectedSpeaker = entityId;
         this._hassObservers.forEach(listener => listener(this.hass));
     }
@@ -229,9 +158,11 @@ class JukeboxCard extends HTMLElement {
     updateStationSwitchStates(hass) {
         let playingUrl = null;
         const selectedSpeaker = this._selectedSpeaker;
+
         if (hass.states[selectedSpeaker] && hass.states[selectedSpeaker].state === 'playing') {
             playingUrl = hass.states[selectedSpeaker].attributes.media_content_id;
         }
+
         this._stationButtons.forEach(stationSwitch => {
             if (stationSwitch.hasAttribute('raised') && stationSwitch.stationUrl !== playingUrl) {
                 stationSwitch.removeAttribute('raised');
@@ -240,7 +171,7 @@ class JukeboxCard extends HTMLElement {
             if (!stationSwitch.hasAttribute('raised') && stationSwitch.stationUrl === playingUrl) {
                 stationSwitch.setAttribute('raised', true);
             }
-        });
+        })
     }
 
     buildStationSwitch(name, url) {
@@ -248,11 +179,11 @@ class JukeboxCard extends HTMLElement {
         btn.stationUrl = url;
         btn.className = 'juke-toggle';
         btn.innerText = name;
-        btn.addEventListener('click', this.onMediaSelect.bind(this));
+        btn.addEventListener('click', this.onStationSelect.bind(this));
         return btn;
     }
 
-    onMediaSelect(e) {
+    onStationSelect(e) {
         this.hass.callService('media_player', 'play_media', {
             entity_id: this._selectedSpeaker,
             media_content_id: e.currentTarget.stationUrl,
@@ -267,6 +198,13 @@ class JukeboxCard extends HTMLElement {
         });
     }
 
+    /***
+     * returns the numeric index of the first entity in a "Playing" state, or 0 (first index).
+     *
+     * @param hass
+     * @returns {number}
+     * @private
+     */
     findFirstPlayingIndex(hass) {
         return Math.max(0, this.config.entities.findIndex(entityId => {
             return hass.states[entityId] && hass.states[entityId].state === 'playing';
@@ -274,8 +212,10 @@ class JukeboxCard extends HTMLElement {
     }
 
     buildSpeakerSwitch(entityId, hass) {
+        const entity = hass.states[entityId];
+
         const btn = document.createElement('paper-tab');
-        btn.entityId = entityId;
+        btn.entityId = entityId;        
         btn.innerText = hass.states[entityId].attributes.friendly_name;
         return btn;
     }
@@ -290,6 +230,70 @@ class JukeboxCard extends HTMLElement {
     getCardSize() {
         return 3;
     }
+}
+
+function getStyle() {
+    const frag = document.createDocumentFragment();
+
+    const included = document.createElement('style');
+    included.setAttribute('include', 'iron-flex iron-flex-alignment');
+
+    const ownStyle = document.createElement('style');
+    ownStyle.innerHTML = `
+    .layout.horizontal, .layout.vertical {
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+    }
+    
+    .layout.horizontal {
+        -ms-flex-direction: row;
+        -webkit-flex-direction: row;
+        flex-direction: row;
+    }
+    
+    .layout.center, .layout.center-center {
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+    }
+    
+    .flex {
+        ms-flex: 1 1 0.000000001px;
+        -webkit-flex: 1;
+        flex: 1;
+        -webkit-flex-basis: 0.000000001px;
+        flex-basis: 0.000000001px;
+    }
+    
+    [hidden] {
+        display: none !important;
+    }
+    
+    .volume {
+        padding: 10px 20px;
+    }
+    
+    mwc-button.juke-toggle {
+        --mdc-theme-primary: var(--primary-text-color);
+    }
+    
+    mwc-button.juke-toggle[raised] {
+        --mdc-theme-primary: var(--primary-color);
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
+    }
+    
+    paper-tabs {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
+        --paper-tabs-selection-bar-color: var(--text-primary-color, #FFF);
+    }
+    `;
+
+    frag.appendChild(included);
+    frag.appendChild(ownStyle);
+    return frag;
 }
 
 customElements.define('jukebox-card-ext', JukeboxCard);
