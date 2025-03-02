@@ -292,6 +292,12 @@ function getStyle() {
 
     const ownStyle = document.createElement('style');
     ownStyle.innerHTML = `
+    /* Set a dark background for the card for contrast */
+    ha-card {
+        background-color: #333;
+        color: #fff;
+    }
+    
     .layout.horizontal, .layout.vertical {
         display: -ms-flexbox;
         display: -webkit-flex;
@@ -342,24 +348,26 @@ function getStyle() {
         --paper-tabs-selection-bar-color: var(--text-primary-color, #FFF);
     }
     
-    /* Custom overrides to make buttons and sliders white */
+    /* Custom overrides to improve visibility: */
+    /* For paper-icon-buttons used in volume controls */
     paper-icon-button {
-        color: white !important;
-        --paper-icon-button-ink-color: white;
-        --paper-icon-button-icon-color: white;
+        color: #fff !important;
+        --paper-icon-button-ink-color: #fff;
+        --paper-icon-button-icon-color: #fff;
     }
     
+    /* For ha-paper-slider, define contrasting colors */
     ha-paper-slider {
-        --paper-slider-knob-color: white;
-        --paper-slider-active-color: white;
-        --paper-slider-pin-color: white;
-        color: white;
+        --paper-slider-knob-color: #fff;
+        --paper-slider-active-color: #fff;
+        --paper-slider-pin-color: #fff;
+        color: #fff;
     }
     
-    /* Adjust sleep timer row (if needed) */
+    /* Ensure the sleep timer slider has similar contrast */
     .sleep-timer ha-paper-slider {
-        --paper-slider-knob-color: white;
-        --paper-slider-active-color: white;
+        --paper-slider-knob-color: #fff;
+        --paper-slider-active-color: #fff;
     }
     `;
     frag.appendChild(included);
