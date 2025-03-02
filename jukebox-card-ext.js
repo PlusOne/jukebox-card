@@ -18,13 +18,14 @@ class JukeboxCard extends HTMLElement {
     }
 
     renderStructure() {
+        console.log('Rendering structure...');
         this.shadowRoot.innerHTML = `
             <ha-card>
               <div id="content">
-                <div id="speaker-switches" class="row"></div>
-                <div id="volume-row" class="row"></div>
-                <div id="sleep-row" class="row"></div>
-                <div id="station-list" class="row"></div>
+                <div id="speaker-switches" class="row">Speaker Switches</div>
+                <div id="volume-row" class="row">Volume Controls</div>
+                <div id="sleep-row" class="row">Sleep Timer</div>
+                <div id="station-list" class="row">Station List</div>
               </div>
               ${this.getStyles()}
             </ha-card>
@@ -59,6 +60,7 @@ class JukeboxCard extends HTMLElement {
                 align-items: center;
                 margin: 8px 0;
                 min-height: 40px; /* Ensure row has visible height */
+                border: 1px solid red; /* Temporary border for debugging */
             }
             ha-paper-slider, paper-icon-button, mwc-button, paper-tab {
                 --paper-slider-knob-color: #fff;
@@ -79,6 +81,7 @@ class JukeboxCard extends HTMLElement {
     }
 
     buildSpeakerSwitches(hass) {
+        console.log('Building speaker switches...');
         const container = document.createElement('div');
         container.className = 'row';
         this._tabs = document.createElement('paper-tabs');
@@ -99,6 +102,7 @@ class JukeboxCard extends HTMLElement {
     }
 
     buildStationList() {
+        console.log('Building station list...');
         this._stationButtons = [];
         const stationList = document.createElement('div');
         stationList.classList.add('row');
@@ -112,6 +116,7 @@ class JukeboxCard extends HTMLElement {
     }
 
     buildVolumeSlider() {
+        console.log('Building volume slider...');
         const volumeContainer = document.createElement('div');
         volumeContainer.className = 'volume center horizontal layout';
         const muteButton = document.createElement('paper-icon-button');
@@ -168,6 +173,7 @@ class JukeboxCard extends HTMLElement {
     }
 
     buildSleepTimerRow() {
+        console.log('Building sleep timer row...');
         const sleepContainer = document.createElement('div');
         sleepContainer.className = 'sleep-timer center horizontal layout';
         const sleepSlider = document.createElement('ha-paper-slider');
@@ -196,6 +202,7 @@ class JukeboxCard extends HTMLElement {
     }
 
     onSpeakerSelect(entityId) {
+        console.log(`Speaker selected: ${entityId}`);
         this._selectedSpeaker = entityId;
         this._hassObservers.forEach(listener => listener(this.hass));
     }
