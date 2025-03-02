@@ -152,34 +152,40 @@ class JukeboxCard extends HTMLElement {
             const state = hass.states[this._selectedSpeaker];
             if (!state) {
                  console.warn('(DEBUG) no state found for', this._selectedSpeaker);
-                 // Use fallback defaults for volume controls
-                 slider.value = 50;
-                 stopButton.setAttribute('disabled', true);
-                 muteButton.setAttribute('icon', 'hass:volume-high');
-                 return;
+                // Fallback defaults – ensure the controls are visible
+                slider.value = 50;
+                stopButton.setAttribute('disabled', true);
+                muteButton.setAttribute('icon', 'hass:volume-high');
+                // DO NOT hide the slider, leave it visible even if state missing
+                return;
             }
             const speakerState = state.attributes;
-            // Always show controls
+            // ALWAYS show controls; remove any hidden attribute
             slider.removeAttribute('hidden');
             stopButton.removeAttribute('hidden');
             muteButton.removeAttribute('hidden');
-            const volLevel = speakerState.hasOwnProperty('volume_level') ? speakerState.volume_level : 0;
+            
+            // Use default volume value if missing instead of hiding controls
+            const volLevel = (speakerState.hasOwnProperty('volume_level')) ? speakerState.volume_level : 0;
             slider.value = volLevel * 100;
+
+            // Enable/disable stop button based on playing state
             if (state.state === 'playing') {
-                 stopButton.removeAttribute('disabled');
+                stopButton.removeAttribute('disabled');
             } else {
-                 stopButton.setAttribute('disabled', true);
+                stopButton.setAttribute('disabled', true);
             }
+            // Instead of hiding, always show mute control
             const isMuted = speakerState.hasOwnProperty('is_volume_muted') ? speakerState.is_volume_muted : false;
             if (isMuted) {
-                  slider.disabled = true;
-                  muteButton.setAttribute('icon', 'hass:volume-off');
-                  muteButton.isMute = true;
-             } else {
-                  slider.disabled = false;
-                  muteButton.setAttribute('icon', 'hass:volume-high');
-                  muteButton.isMute = false;
-             }
+                slider.disabled = true;
+                muteButton.setAttribute('icon', 'hass:volume-off');
+                muteButton.isMute = true;
+            } else {
+                slider.disabled = false;
+                muteButton.setAttribute('icon', 'hass:volume-high');
+                muteButton.isMute = false;
+            }
         });
 
         return volumeContainer;
@@ -336,8 +342,41 @@ class JukeboxCard extends HTMLElement {
     }
 
     getCardSize() {
-        return 3;
-    }
-}
 
-customElements.define('jukebox-card-ext', JukeboxCard);
+
+
+
+
+
+customElements.define('jukebox-card-ext', JukeboxCard);}    }        return 3;function getStyle() {
+    const frag = document.createDocumentFragment();
+    const included = document.createElement('style');
+    included.setAttribute('include', 'iron-flex iron-flex-alignment');
+    const ownStyle = document.createElement('style');
+    ownStyle.innerHTML = `
+        /* Set a dark background for the card for contrast */
+        ha-card {
+            background-color: #333;
+            color: #fff;
+            padding: 16px;
+            font-family: sans-serif;
+        }
+        .layout.horizontal, .layout.vertical {
+            display: flex;
+        }
+        .volume {
+            padding: 10px 20px;
+            min-height: 50px; /* Ensure volume row remains visible */
+        }
+        paper-icon-button, ha-paper-slider {
+            color: #fff !important;
+        }
+        ha-paper-slider {
+            --paper-slider-knob-color: #fff;
+            --paper-slider-active-color: #fff;
+        }
+    `;
+    frag.appendChild(included);
+    frag.appendChild(ownStyle);
+    return frag;
+}
