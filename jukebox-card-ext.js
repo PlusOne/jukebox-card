@@ -229,11 +229,12 @@ class JukeboxCard extends HTMLElement {
         btn.stationUrl = url;
         btn.className = 'juke-toggle';
         btn.innerText = name;
-        btn.addEventListener('click', this.onStationSelect.bind(this));
+        // Update event listener to use onMediaSelect instead of onStationSelect.
+        btn.addEventListener('click', this.onMediaSelect.bind(this));
         return btn;
     }
 
-    onStationSelect(e) {
+    onMediaSelect(e) {
         this.hass.callService('media_player', 'play_media', {
             entity_id: this._selectedSpeaker,
             media_content_id: e.currentTarget.stationUrl,
